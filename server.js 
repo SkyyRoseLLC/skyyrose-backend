@@ -1,0 +1,38 @@
+word logic — replace with OpenAI or logic later
+  const keywords = [
+    `${topic} streetwear`,
+    `${topic} outfit ideas`,
+    `${topic} lookbook`,
+    `${topic} fashion 2025`,
+  ];
+
+  res.json({ topic, keywords });
+});
+
+app.post('/brand-name-generator', (req, res) => {
+  const { vibe } = req.body;
+
+  const names = [
+    `House of ${vibe}`,
+    `${vibe} Noir`,
+    `${vibe} Society`,
+    `The ${vibe} Lab`,
+  ];
+
+  res.json({ suggestions: names });
+});
+import express from 'express';
+import dotenv from 'dotenv';
+
+dotenv.config();
+const app = express();
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('✅ Skyy Rose backend is live!');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
