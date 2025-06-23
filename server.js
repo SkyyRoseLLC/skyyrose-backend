@@ -3,8 +3,11 @@ const dotenv = require('dotenv');
 const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require("openai");
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 dotenv.config();
 const app = express();
 const upload = multer({ dest: 'uploads/' });
