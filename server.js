@@ -1,3 +1,99 @@
+import multer from 'multer';
+import csv from 'csv-parser';
+import fs from 'fs';
+const upload = multer({ dest: 'uploads/' });
+app.post('/upload-csv', upload.single('file'), (req, res) => {
+  const results = [];
+  fs.createReadStream(req.file.path)
+    .pipe(csv())
+    .on('data', (data) => results.push(data))
+    .on('end', () => {
+      fs.unlinkSync(req.file.path); // clean up
+      res.json({ rows: results.length, preview: results.slice(0, 5) });
+    });
+});
+app.post('/analyze-csv', async (req, res) => {
+  const { data } = req.body;
+
+  try {
+    const gptRes = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You're a fashion data strategist. Analyze fashion inventory or pricing data and return 3 insights in plain English.",
+        },
+        {
+          role: "user",
+          content: `Here is the data: ${JSON.stringify(data)}.`,
+        },
+      ],
+    });
+
+    const insights = gptRes.data.choices[0].message.content;
+    res.json({ insights });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to analyze CSV data." });
+  }
+});
+import { Configuration, OpenAIApi } from "openai";
+
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+);
+app.post('/seo-keywords', async (req, res) => {
+  const { topic } = req.body;
+
+  try {
+    const gptRes = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You're an expert in fashion SEO." },
+        {
+          role: "user",
+          content: `Give me 10 SEO keywords related to "${topic}". Return only a plain JSON array.`,
+        },
+      ],
+    });
+
+    const keywords = JSON.parse(gptRes.data.choices[0].message.content);
+    res.json({ topic, keywords });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get SEO keywords." });
+  }
+});
+import { Configuration, OpenAIApi } from "openai";
+
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+)app.post('/seo-keywords', async (req, res) => {
+  const { topic } = req.body;
+
+  try {
+    const gptRes = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You're an expert in fashion SEO." },
+        {
+          role: "user",
+          content: `Give me 10 SEO keywords related to "${topic}". Return only a plain JSON array.`,
+        },
+      ],
+    });
+
+    const keywords = JSON.parse(gptRes.data.choices[0].message.content);
+    res.json({ topic, keywords });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get SEO keywords." });
+  }
+});
 import express from 'express';
 import dotenv from 'dotenv';
 
