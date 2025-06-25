@@ -3,100 +3,53 @@ const dotenv = require('dotenv');
 const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
-const OpenAI = require("openai");
+const OpenAI = require('openai');
+
+dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-dotenv.config();
+
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 app.use(express.json());
 
-const openai = new OpenAIApi(
-  new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-);
-
 const PORT = process.env.PORT || 3000;
 
+// 🌹 Root check
 app.get('/', (req, res) => {
-  res.send('🌹 Skyy Rose backend is LIVE — Fashion meets AI.');
+  res.send('🌹 Skyy Rose backend is alive.');
 });
 
-// ✅ /seo-keywords — GPT powered
-app.post('/seo-keywords', async (req, res) => {
-  const { topic } = req.body;
-  try {
-    const gptRes = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: "You're an expert in fashion SEO." },
-        {
-          role: "user",
-          content: `Give me 10 SEO keywords related to "${topic}". Return only a plain JSON array.`,
-        },
-      ],
-    });
-    const keywords = JSON.parse(gptRes.data.choices[0].message.content);
-    res.json({ topic, keywords });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to get SEO keywords." });
-  }
-});
-
-// ✅ /brand-name-generator
-app.post('/brand-name-generator', async (req, res) => {
-  const { vibe } = req.body;
-  try {
-    const gptRes = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: "You're a fashion brand strategist." },
-        {
-          role: "user",
-          content: `Give me 5 luxury fashion brand name ideas based on the vibe: ${vibe}`,
-        },
-      ],
-    });
-    const suggestions = gptRes.data.choices[0].message.content.split('\n').filter(Boolean);
-    res.json({ suggestions });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to generate brand names." });
-  }
-});
-
-// ✅ /fashion-prompt
-app.post('/fashion-prompt', (req, res) => {
-  const { theme, gender } = req.body;
-  const prompt = `Design a ${gender || 'gender-neutral'} high-end fashion look inspired by "${theme}" with futuristic elements and elevated textures.`;
-  res.json({ prompt });
-});
-
-// ✅ /fashion-quote
+// ✨ Fashion Quote
 app.get('/fashion-quote', (req, res) => {
   const quotes = [
     "Fashion is the armor to survive the reality of everyday life. – Bill Cunningham",
     "Style is a way to say who you are without having to speak. – Rachel Zoe",
     "You can have anything you want in life if you dress for it. – Edith Head",
     "Fashions fade, style is eternal. – Yves Saint Laurent",
-    "Elegance is elimination. – Cristóbal Balenciaga"
+    "Elegance is elimination. – Cristóbal Balenciaga",
   ];
   const quote = quotes[Math.floor(Math.random() * quotes.length)];
   res.json({ quote });
 });
 
-// ✅ /analyze-style
+// 🔮 Fashion Prompt Generator
+app.post('/fashion-prompt', (req, res) => {
+  const { theme, gender } = req.body;
+  const prompt = `Design a ${gender || 'gender-neutral'} high-end fashion look inspired by "${theme}" with luxurious textures, storytelling, and elevated color use.`;
+  res.json({ prompt });
+});
+
+// 🧵 Style Analyzer
 app.post('/analyze-style', (req, res) => {
   const { description } = req.body;
   let style = "Uncategorized";
 
   if (description.includes('leather') || description.includes('chains')) {
     style = "Grunge / Streetwear";
-  } else if (description.includes('minimal') || description.includes('neutral tones')) {
+  } else if (description.includes('minimal') || description.includes('neutral')) {
     style = "Minimalist";
   } else if (description.includes('floral') || description.includes('lace')) {
     style = "Romantic / Boho";
@@ -107,48 +60,80 @@ app.post('/analyze-style', (req, res) => {
   res.json({ description, style });
 });
 
-// ✅ /upload-csv
+// 📤 CSV Upload
 app.post('/upload-csv', upload.single('file'), (req, res) => {
   const results = [];
+
   fs.createReadStream(req.file.path)
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-      fs.unlinkSync(req.file.path); // clean up
-      res.json({ rows: results.length, preview: results.slice(0, 5) });
+      fs.unlinkSync(req.file.path); // Clean up
+      res.json({ preview: results.slice(0, 5), rows: results.length });
+    })
+    .on('error', (err) => {
+      console.error('CSV Upload Error:', err);
+      res.status(500).json({ error: 'Failed to process CSV.' });
     });
 });
 
-// ✅ /analyze-csv — GPT-powered
+// 🧠 Analyze CSV Content with GPT
 app.post('/analyze-csv', async (req, res) => {
   const { data } = req.body;
 
   try {
-    const gptRes = await openai.createChatCompletion({
-      model: "gpt-4",
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
       messages: [
         {
-          role: "system",
-          content: "You're a fashion data strategist. Analyze fashion inventory or pricing data and return 3 insights in plain English.",
+          role: 'system',
+          content: 'You are Skyy Rose, a fashion-forward data analyst. Analyze the CSV data and provide brand-level fashion insights.',
         },
         {
-          role: "user",
-          content: `Here is the data: ${JSON.stringify(data)}.`,
+          role: 'user',
+          content: `Here is the CSV data: ${JSON.stringify(data)}. Summarize 3 insights about fashion customer trends.`,
         },
       ],
     });
 
-    const insights = gptRes.data.choices[0].message.content;
+    const insights = completion.choices[0].message.content.trim();
     res.json({ insights });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to analyze CSV data." });
+  } catch (error) {
+    console.error('CSV Analysis Error:', error.message);
+    res.status(500).json({ error: 'Failed to analyze CSV.' });
   }
 });
 
-// ✅ Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Skyy Rose backend running on port ${PORT}`);
+// 🔎 SEO Keyword Generator
+app.post('/seo-keywords', async (req, res) => {
+  const { topic } = req.body;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a poetic, fashion-minded SEO strategist named Skyy Rose.',
+        },
+        {
+          role: 'user',
+          content: `Generate 10 SEO keywords for: "${topic}". Return only a JSON array.`,
+        },
+      ],
+    });
+
+    const output = completion.choices[0].message.content.trim();
+    const keywords = JSON.parse(output);
+    res.json({ topic, keywords });
+  } catch (error) {
+    console.error('SEO Error:', error.message);
+    res.status(500).json({ error: 'SEO generation failed.' });
+  }
 });
 
+// ✅ Start Server
+app.listen(PORT, () => {
+  console.log(`✅ Skyy Rose backend is running on port ${PORT}`);
+});
 
