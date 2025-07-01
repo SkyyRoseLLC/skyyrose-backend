@@ -131,6 +131,26 @@ app.post('/seo-keywords', async (req, res) => {
     res.status(500).json({ error: 'SEO generation failed.' });
   }
 });
+// 💬 General Chat Endpoint
+app.post('/chat', async (req, res) => {
+  const userMessage = req.body.message;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: 'You are Skyy Rose, a stylish and smart virtual assistant.' },
+        { role: 'user', content: userMessage },
+      ],
+    });
+
+    const reply = completion.choices[0].message.content.trim();
+    res.json({ reply });
+  } catch (error) {
+    console.error('Chat error:', error.message);
+    res.status(500).json({ error: 'Chat failed. Please try again.' });
+  }
+});
 
 // ✅ Start Server
 app.listen(PORT, () => {
