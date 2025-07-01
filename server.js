@@ -4,6 +4,7 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
 const OpenAI = require('openai');
+const cors = require('cors');
 
 dotenv.config();
 
@@ -13,13 +14,42 @@ const openai = new OpenAI({
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
+
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// 🌹 Root check
+// 🌹 Root health check
 app.get('/', (req, res) => {
   res.send('🌹 Skyy Rose backend is alive.');
+});
+
+// 💬 General Chatbot Endpoint
+app.post('/chat', async (req, res) => {
+  const userMessage = req.body.message;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are Skyy Rose, a stylish and smart virtual assistant.',
+        },
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+    });
+
+    const reply = completion.choices[0].message.content.trim();
+    res.json({ reply });
+  } catch (error) {
+    console.error('Chat error:', error.message);
+    res.status(500).json({ error: 'Chat failed. Please try again.' });
+  }
 });
 
 // ✨ Fashion Quote
@@ -45,16 +75,16 @@ app.post('/fashion-prompt', (req, res) => {
 // 🧵 Style Analyzer
 app.post('/analyze-style', (req, res) => {
   const { description } = req.body;
-  let style = "Uncategorized";
+  let style = 'Uncategorized';
 
   if (description.includes('leather') || description.includes('chains')) {
-    style = "Grunge / Streetwear";
+    style = 'Grunge / Streetwear';
   } else if (description.includes('minimal') || description.includes('neutral')) {
-    style = "Minimalist";
+    style = 'Minimalist';
   } else if (description.includes('floral') || description.includes('lace')) {
-    style = "Romantic / Boho";
+    style = 'Romantic / Boho';
   } else if (description.includes('tailored') || description.includes('structured')) {
-    style = "Luxury / High Fashion";
+    style = 'Luxury / High Fashion';
   }
 
   res.json({ description, style });
@@ -68,7 +98,7 @@ app.post('/upload-csv', upload.single('file'), (req, res) => {
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-      fs.unlinkSync(req.file.path); // Clean up
+      fs.unlinkSync(req.file.path); // clean up
       res.json({ preview: results.slice(0, 5), rows: results.length });
     })
     .on('error', (err) => {
@@ -129,46 +159,6 @@ app.post('/seo-keywords', async (req, res) => {
   } catch (error) {
     console.error('SEO Error:', error.message);
     res.status(500).json({ error: 'SEO generation failed.' });
-  }
-});
-// 💬 General Chat Endpoint
-app.post('/chat', async (req, res) => {
-  const userMessage = req.body.message;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: 'You are Skyy Rose, a stylish and smart virtual assistant.' },
-        { role: 'user', content: userMessage },
-      ],
-    });
-
-    const reply = completion.choices[0].message.content.trim();
-    res.json({ reply });
-  } catch (error) {
-    console.error('Chat error:', error.message);
-    res.status(500).json({ error: 'Chat failed. Please try again.' });
-  }
-});
-// 💬 General Chatbot Endpoint
-app.post('/chat', async (req, res) => {
-  const userMessage = req.body.message;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: 'You are Skyy Rose, a stylish and smart virtual assistant.' },
-        { role: 'user', content: userMessage },
-      ],
-    });
-
-    const reply = completion.choices[0].message.content.trim();
-    res.json({ reply });
-  } catch (error) {
-    console.error('Chat error:', error.message);
-    res.status(500).json({ error: 'Chat failed. Please try again.' });
   }
 });
 
